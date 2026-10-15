@@ -10,27 +10,25 @@
             padding: 20px;
             max-width: 600px;
             margin: 0 auto;
-            /* 背景改成極淡的紫灰色，襯托主題 */
-            background-color: #F8F6FA; 
-            /* 字體改成深紫灰，取代死板的純黑 */
-            color: #4A4050; 
+            /* 明亮乾淨的微灰白背景 */
+            background-color: #F8F9FA; 
+            color: #333333;
             line-height: 1.6;
         }
         
         .container {
             background: #FFFFFF;
             padding: 30px;
-            border-radius: 12px;
-            /* 陰影也加入一點點紫色調 */
-            box-shadow: 0 8px 24px rgba(165, 144, 175, 0.15); 
-            /* 頂部裝飾線換成你的主角紫 */
-            border-top: 6px solid #A590AF; 
+            border-radius: 16px;
+            /* 非常輕微的陰影，讓白色區塊像浮在畫面上 */
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04); 
+            border: 1px solid #F0F0F0;
         }
 
         h2 {
             text-align: center;
-            /* 標題用比 A590AF 深一點的紫，確保對比度與易讀性 */
-            color: #755E80; 
+            /* 使用官方標誌紫作為視覺重心 */
+            color: #5E4286; 
             font-weight: 600;
             letter-spacing: 0.5px;
             margin-bottom: 25px;
@@ -40,28 +38,27 @@
         p {
             font-size: 14.5px;
             margin-bottom: 10px;
-            color: #7D7085;
+            color: #666666;
         }
 
         input[type="text"], textarea {
             width: 100%;
             padding: 14px;
             margin-bottom: 15px;
-            border: 1px solid #DCD6E0;
-            border-radius: 8px;
+            border: 1px solid #EAEAEA;
+            border-radius: 10px;
             box-sizing: border-box;
             font-size: 15px;
-            background-color: #FDFBFE;
-            color: #4A4050;
-            transition: all 0.3s ease;
+            background-color: #FCFCFC;
+            color: #333;
+            transition: all 0.2s ease;
         }
 
         input[type="text"]:focus, textarea:focus {
-            border-color: #A590AF;
+            border-color: #5E4286;
             outline: none;
             background-color: #FFFFFF;
-            /* 點擊輸入框時的光暈也配合主題色 */
-            box-shadow: 0 0 0 3px rgba(165, 144, 175, 0.2); 
+            box-shadow: 0 0 0 3px rgba(94, 66, 134, 0.1); 
         }
 
         textarea {
@@ -70,7 +67,7 @@
         }
 
         input::placeholder, textarea::placeholder {
-            color: #B5ABB8;
+            color: #CCCCCC;
         }
 
         button {
@@ -78,7 +75,7 @@
             padding: 14px;
             margin-bottom: 12px;
             border: none;
-            border-radius: 8px;
+            border-radius: 10px;
             font-size: 16px;
             letter-spacing: 0.5px;
             cursor: pointer;
@@ -90,29 +87,29 @@
             transform: scale(0.98);
         }
 
-        /* 第一步按鈕：深煙燻紫 (負責最主要的動作) */
+        /* 獲取純文字：視覺最強烈的官方紫 */
         .btn-fetch {
-            background-color: #755E80; 
+            background-color: #5E4286; 
             color: white;
         }
-        .btn-fetch:hover { background-color: #5F4B68; }
+        .btn-fetch:hover { background-color: #4A3469; }
 
-        /* 第二步按鈕：你指定的 #A590AF (視覺主角) */
+        /* 複製全部文字：輕盈的淡紫色背景，深紫文字，保持明亮感 */
         .btn-copy {
-            background-color: #A590AF; 
-            color: white;
+            background-color: #F2EFFF; 
+            color: #5E4286; 
             display: none;
         }
-        .btn-copy:hover { background-color: #8D7996; }
+        .btn-copy:hover { background-color: #E6E0FF; }
 
-        /* 第三步按鈕：淺灰紫 (輔助功能，使用深色字體確保層次感) */
+        /* 下載純文字：極簡的淺灰色，降低干擾 */
         .btn-download {
-            background-color: #D2C6D6; 
-            color: #4A4050; 
+            background-color: #F0F0F0; 
+            color: #555555; 
             display: none;
             margin-bottom: 20px;
         }
-        .btn-download:hover { background-color: #BFB1C4; }
+        .btn-download:hover { background-color: #E4E4E4; }
 
     </style>
 </head>
@@ -226,15 +223,17 @@
         navigator.clipboard.writeText(text).then(() => {
             const copyBtn = document.getElementById('copyBtn');
             const originalText = copyBtn.innerText;
-            const originalColor = copyBtn.style.backgroundColor;
+            const originalBg = copyBtn.style.backgroundColor;
+            const originalColor = copyBtn.style.color;
             
             copyBtn.innerText = '✅ 複製成功';
-            /* 複製成功換成低飽和的鼠尾草綠，配合整體色調 */
-            copyBtn.style.backgroundColor = '#8BA896'; 
+            copyBtn.style.backgroundColor = '#E8F5E9'; /* 明亮的淺綠色背景 */
+            copyBtn.style.color = '#2E7D32'; /* 深綠色文字 */
             
             setTimeout(() => {
                 copyBtn.innerText = originalText;
-                copyBtn.style.backgroundColor = ''; 
+                copyBtn.style.backgroundColor = originalBg; 
+                copyBtn.style.color = originalColor;
             }, 2000);
         }).catch(err => {
             const outputElement = document.getElementById('output');
