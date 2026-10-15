@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JW 字幕提取工具 (手機友善版)</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px;
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #f9f9f9;
+            color: #333;
+        }
+        h2 {
+            text-align: center;
+            color: #4A90E2;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 10px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .btn-fetch {
+            background-color: #4A90E2;
+            color: white;
+        }
+        .btn-download {
+            background-color: #2ECC71;
+            color: white;
+            display: none; /* 預設隱藏，抓到字幕才顯示 */
+        }
+        textarea {
+            width: 100%;
+            height: 300px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+            font-size: 14px;
+            line-height: 1.5;
+            resize: vertical;
+        }
+        .note {
+            font-size: 12px;
+            color: #777;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>JW 字幕提取工具</h2>
+    <p>請貼上 JW Library 的「分享連結」：</p>
+    <input type="text" id="urlInput" placeholder="例如：https://www.jw.org/finder?srcid=share&wtlocale=CH...">
+    
+    <button class="btn-fetch" onclick="fetchSubtitles()">1. 獲取字幕</button>
+    <button class="btn-download" id="downloadBtn" onclick="downloadSubtitles()">2. 下載字幕檔 (.vtt)</button>
+    
+    <textarea id="output" placeholder="字幕內容會顯示在這裡...可以手動全選複製，或是點擊上方按鈕下載。"></textarea>
+    
+    <p class="note">* 採用同步下載機制，避開手機瀏覽器的安全阻擋。</p>
+</div>
+
+<script>
+    async function fetchSubtitles() {
+        const urlInput = document.getElementById('urlInput').value.trim();
+        const output = document.getElementById('output');
+        const downloadBtn = document.getElementById('downloadBtn');
+        
+        if (!urlInput) {
+            alert('請先輸入網址喔！');
+            return;
+        }
+
+        output.value = '正在努力去 JW 伺服器撈資料中...\n請稍候...';
+        downloadBtn.style.display = 'none';
+
+        try {
+            // 1. 解析網址找出語言(wtlocale)跟影片ID(lank)
+            const urlObj = new URL(urlInput);
+            const lank = urlObj.searchParams.get('lank') || urlObj.searchParams.get('docid');
+            const wtlocale = urlObj.searchParams.get('wtlocale') || 'CH'; // 預設抓中文
+
+            if (!lank) {
+                output.value = '網址格式好像不太對。請確定是從 JW 網站或 APP 按「分享」產生的標準連結（裡面要有 lank 或 docid）。';
+                return;
+            }
+
+            // 2. 呼叫 JW Mediator API
+            const apiUrl = `https://b.jw-cdn.org/apis/mediator/v1/media-items/${wtlocale}/${lank}`;
+            const response = await fetch(apiUrl);
+            
+            if (!response.ok) {
+                throw new Error('找不到這支影片的資料，可能是網址過期或語言代碼不對。');
+            }
+            
+            const data = await response.json();
+
+            // 3. 在一堆檔案裡尋找字幕檔 (VTT)
+            let vttUrl = '';
+            const mediaItems = data.media || [];
+            
+            for (let item of mediaItems) {
+                for (let file of item.files || []) {
+                    if (file.subtitles && file.subtitles.url) {
+                        vttUrl = file.subtitles.url;
+                        break;
+                    }
+                }
+                if (vttUrl) break; // 找到就跳出迴圈
+            }
+
+            if (!vttUrl) {
+                output.value = '解析成功，但這部影片似乎沒有提供外掛字幕檔。';
+                return;
+            }
+
+            // 4. 去把 VTT 字幕檔的純文字抓回來
+            const vttResponse = await fetch(vttUrl);
+            const vttText = await vttResponse.text();
+
+            // 5. 顯示在畫面上，並把下載按鈕叫出來
+            output.value = vttText;
+            downloadBtn.style.display = 'block';
+
+        } catch (err) {
+            output.value = '發生錯誤了：\n' + err.message + '\n\n如果是跨網域(CORS)被擋，請換個瀏覽器試試看。';
+        }
+    }
+
+    function downloadSubtitles() {
+        const text = document.getElementById('output').value;
+        if (!text) return;
+        
+        // 利用 Blob 產生虛擬檔案，這是手機瀏覽器比較看得懂的下載方式
+        const blob = new Blob([text], { type: 'text/vtt' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        
+        a.href = url;
+        a.download = 'JW_Subtitle.vtt';
+        document.body.appendChild(a);
+        a.click();
+        
+        // 點擊完過河拆橋把虛擬連結刪掉，釋放記憶體
+        setTimeout(() => {
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }, 100);
+    }
+</script>
+
+</body>
+</html>
