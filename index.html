@@ -3,85 +3,267 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JW 字幕提取工具 (純文字版)</title>
+    <title>JW 字幕提取工具</title>
     <style>
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             padding: 20px;
             max-width: 600px;
             margin: 0 auto;
-            background-color: #f9f9f9;
-            color: #333;
+            /* 背景改成極淡的紫灰色，襯托主題 */
+            background-color: #F8F6FA; 
+            /* 字體改成深紫灰，取代死板的純黑 */
+            color: #4A4050; 
+            line-height: 1.6;
         }
+        
+        .container {
+            background: #FFFFFF;
+            padding: 30px;
+            border-radius: 12px;
+            /* 陰影也加入一點點紫色調 */
+            box-shadow: 0 8px 24px rgba(165, 144, 175, 0.15); 
+            /* 頂部裝飾線換成你的主角紫 */
+            border-top: 6px solid #A590AF; 
+        }
+
         h2 {
             text-align: center;
-            color: #4A90E2;
+            /* 標題用比 A590AF 深一點的紫，確保對比度與易讀性 */
+            color: #755E80; 
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            margin-bottom: 25px;
+            margin-top: 0;
         }
-        .container {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        input[type="text"] {
-            width: 100%;
-            padding: 12px;
+
+        p {
+            font-size: 14.5px;
             margin-bottom: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            box-sizing: border-box;
-            font-size: 16px;
+            color: #7D7085;
         }
-        button {
+
+        input[type="text"], textarea {
             width: 100%;
-            padding: 12px;
-            margin-bottom: 10px;
-            border: none;
-            border-radius: 5px;
-            font-size: 16px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: background-color 0.3s;
-        }
-        .btn-fetch {
-            background-color: #4A90E2;
-            color: white;
-        }
-        .btn-download {
-            background-color: #2ECC71;
-            color: white;
-            display: none;
-        }
-        .btn-copy {
-            background-color: #F39C12; /* 顯眼的橘黃色 */
-            color: white;
-            display: none;
-        }
-        textarea {
-            width: 100%;
-            height: 300px;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
+            padding: 14px;
+            margin-bottom: 15px;
+            border: 1px solid #DCD6E0;
+            border-radius: 8px;
             box-sizing: border-box;
             font-size: 15px;
-            line-height: 1.6;
+            background-color: #FDFBFE;
+            color: #4A4050;
+            transition: all 0.3s ease;
+        }
+
+        input[type="text"]:focus, textarea:focus {
+            border-color: #A590AF;
+            outline: none;
+            background-color: #FFFFFF;
+            /* 點擊輸入框時的光暈也配合主題色 */
+            box-shadow: 0 0 0 3px rgba(165, 144, 175, 0.2); 
+        }
+
+        textarea {
+            height: 320px;
             resize: vertical;
         }
-        .note {
-            font-size: 12px;
-            color: #777;
-            margin-top: 10px;
+
+        input::placeholder, textarea::placeholder {
+            color: #B5ABB8;
         }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            margin-bottom: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        /* 第一步按鈕：深煙燻紫 (負責最主要的動作) */
+        .btn-fetch {
+            background-color: #755E80; 
+            color: white;
+        }
+        .btn-fetch:hover { background-color: #5F4B68; }
+
+        /* 第二步按鈕：你指定的 #A590AF (視覺主角) */
+        .btn-copy {
+            background-color: #A590AF; 
+            color: white;
+            display: none;
+        }
+        .btn-copy:hover { background-color: #8D7996; }
+
+        /* 第三步按鈕：淺灰紫 (輔助功能，使用深色字體確保層次感) */
+        .btn-download {
+            background-color: #D2C6D6; 
+            color: #4A4050; 
+            display: none;
+            margin-bottom: 20px;
+        }
+        .btn-download:hover { background-color: #BFB1C4; }
+
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>JW 字幕提取工具 (純文字版)</h2>
+    <h2>JW 字幕提取工具</h2>
     <p>請貼上 JW Library 的「分享連結」：</p>
-    <input type="text" id="urlInput" placeholder="例如：https://www.jw.org/finder?srcid=share&wtlocale=CH...">
+    <input type="text" id="urlInput" placeholder="在此貼上連結...">
     
-    <button class="btn-fetch" onclick="fetchSubtitles()">1. 獲取純文字</button>
-    <button class="btn-copy" id="copyBtn" onclick="copyText()">2. 複製全部文字</button>
-    <button class="btn-download" id="downloadBtn" onclick
+    <button class="btn-fetch" onclick="fetchSubtitles()">獲取純文字</button>
+    <button class="btn-copy" id="copyBtn" onclick="copyText()">複製全部文字</button>
+    <button class="btn-download" id="downloadBtn" onclick="downloadSubtitles()">下載純文字檔 (.txt)</button>
+    
+    <textarea id="output" placeholder="字幕純文字會顯示在這裡..."></textarea>
+</div>
+
+<script>
+    function cleanVttText(vtt) {
+        const lines = vtt.split('\n');
+        const cleanLines = [];
+        
+        for (let line of lines) {
+            line = line.trim();
+            if (!line || line === 'WEBVTT' || line.includes('-->') || /^\d+$/.test(line)) continue;
+            if (line.startsWith('NOTE') || line.startsWith('Language:')) continue;
+            
+            const textOnly = line.replace(/<[^>]+>/g, '');
+            cleanLines.push(textOnly);
+        }
+        return cleanLines.join('\n');
+    }
+
+    async function fetchSubtitles() {
+        const rawInput = document.getElementById('urlInput').value.trim();
+        const output = document.getElementById('output');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const copyBtn = document.getElementById('copyBtn');
+        
+        if (!rawInput) {
+            alert('請先貼上內容喔！');
+            return;
+        }
+
+        const urlMatch = rawInput.match(/https?:\/\/[^\s]+/);
+        if (!urlMatch) {
+            output.value = '從你貼上的內容裡找不到有效的網址。\n請確定裡面有包含 https:// 開頭的連結。';
+            return;
+        }
+
+        const validUrl = urlMatch[0];
+
+        output.value = `解析網址中...\n目標網址：${validUrl}\n請稍候...`;
+        downloadBtn.style.display = 'none';
+        copyBtn.style.display = 'none';
+
+        try {
+            const urlObj = new URL(validUrl);
+            const lank = urlObj.searchParams.get('lank') || urlObj.searchParams.get('docid');
+            const wtlocale = urlObj.searchParams.get('wtlocale') || 'CH';
+
+            if (!lank) {
+                output.value = '網址格式有誤，找不到影片 ID。這可能不是正確的影片連結。';
+                return;
+            }
+
+            const apiUrl = `https://b.jw-cdn.org/apis/mediator/v1/media-items/${wtlocale}/${lank}`;
+            const response = await fetch(apiUrl);
+            
+            if (!response.ok) throw new Error('找不到影片資料。');
+            
+            const data = await response.json();
+
+            let vttUrl = '';
+            const mediaItems = data.media || [];
+            
+            for (let item of mediaItems) {
+                for (let file of item.files || []) {
+                    if (file.subtitles && file.subtitles.url) {
+                        vttUrl = file.subtitles.url;
+                        break;
+                    }
+                }
+                if (vttUrl) break;
+            }
+
+            if (!vttUrl) {
+                output.value = '這部影片目前沒有字幕檔可以抓取。';
+                return;
+            }
+
+            const vttResponse = await fetch(vttUrl);
+            const vttText = await vttResponse.text();
+
+            const finalCleanText = cleanVttText(vttText);
+
+            output.value = finalCleanText;
+            
+            downloadBtn.style.display = 'block';
+            copyBtn.style.display = 'block';
+
+        } catch (err) {
+            output.value = '發生錯誤了：\n' + err.message;
+        }
+    }
+
+    function copyText() {
+        const text = document.getElementById('output').value;
+        if (!text) return;
+
+        navigator.clipboard.writeText(text).then(() => {
+            const copyBtn = document.getElementById('copyBtn');
+            const originalText = copyBtn.innerText;
+            const originalColor = copyBtn.style.backgroundColor;
+            
+            copyBtn.innerText = '✅ 複製成功';
+            /* 複製成功換成低飽和的鼠尾草綠，配合整體色調 */
+            copyBtn.style.backgroundColor = '#8BA896'; 
+            
+            setTimeout(() => {
+                copyBtn.innerText = originalText;
+                copyBtn.style.backgroundColor = ''; 
+            }, 2000);
+        }).catch(err => {
+            const outputElement = document.getElementById('output');
+            outputElement.select();
+            outputElement.setSelectionRange(0, 99999); 
+            document.execCommand('copy');
+            alert('已複製到剪貼簿！');
+        });
+    }
+
+    function downloadSubtitles() {
+        const text = document.getElementById('output').value;
+        if (!text) return;
+        
+        const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        
+        a.href = url;
+        a.download = 'JW_字幕.txt';
+        document.body.appendChild(a);
+        a.click();
+        
+        setTimeout(() => {
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }, 100);
+    }
+</script>
+
+</body>
+</html>
