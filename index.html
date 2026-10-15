@@ -41,6 +41,7 @@
             font-size: 16px;
             cursor: pointer;
             font-weight: bold;
+            transition: background-color 0.3s;
         }
         .btn-fetch {
             background-color: #4A90E2;
@@ -48,6 +49,11 @@
         }
         .btn-download {
             background-color: #2ECC71;
+            color: white;
+            display: none;
+        }
+        .btn-copy {
+            background-color: #F39C12; /* 顯眼的橘黃色 */
             color: white;
             display: none;
         }
@@ -77,119 +83,5 @@
     <input type="text" id="urlInput" placeholder="例如：https://www.jw.org/finder?srcid=share&wtlocale=CH...">
     
     <button class="btn-fetch" onclick="fetchSubtitles()">1. 獲取純文字</button>
-    <button class="btn-download" id="downloadBtn" onclick="downloadSubtitles()">2. 下載純文字檔 (.txt)</button>
-    
-    <textarea id="output" placeholder="乾淨的文字會顯示在這裡..."></textarea>
-    
-</div>
-
-<script>
-    // 清理 VTT 格式，只保留純文字的魔法函數
-    function cleanVttText(vtt) {
-        const lines = vtt.split('\n');
-        const cleanLines = [];
-        
-        for (let line of lines) {
-            line = line.trim();
-            
-            // 過濾掉不需要的行數：空白行、WEBVTT標頭、時間軸(-->)、純數字編號
-            if (!line) continue;
-            if (line === 'WEBVTT') continue;
-            if (line.includes('-->')) continue;
-            if (/^\d+$/.test(line)) continue;
-            if (line.startsWith('NOTE') || line.startsWith('Language:')) continue;
-            
-            // 把字幕內可能夾帶的樣式標籤 (例如 <b>, <i>, <c.color>) 拿掉
-            const textOnly = line.replace(/<[^>]+>/g, '');
-            cleanLines.push(textOnly);
-        }
-        
-        // 把所有的句子接起來，中間換行，讓它變成好讀的文章
-        return cleanLines.join('\n');
-    }
-
-    async function fetchSubtitles() {
-        const urlInput = document.getElementById('urlInput').value.trim();
-        const output = document.getElementById('output');
-        const downloadBtn = document.getElementById('downloadBtn');
-        
-        if (!urlInput) {
-            alert('請先輸入網址喔！');
-            return;
-        }
-
-        output.value = '正在處理中，請稍候...';
-        downloadBtn.style.display = 'none';
-
-        try {
-            const urlObj = new URL(urlInput);
-            const lank = urlObj.searchParams.get('lank') || urlObj.searchParams.get('docid');
-            const wtlocale = urlObj.searchParams.get('wtlocale') || 'CH';
-
-            if (!lank) {
-                output.value = '網址格式有誤。';
-                return;
-            }
-
-            const apiUrl = `https://b.jw-cdn.org/apis/mediator/v1/media-items/${wtlocale}/${lank}`;
-            const response = await fetch(apiUrl);
-            
-            if (!response.ok) throw new Error('找不到影片資料。');
-            
-            const data = await response.json();
-
-            let vttUrl = '';
-            const mediaItems = data.media || [];
-            
-            for (let item of mediaItems) {
-                for (let file of item.files || []) {
-                    if (file.subtitles && file.subtitles.url) {
-                        vttUrl = file.subtitles.url;
-                        break;
-                    }
-                }
-                if (vttUrl) break;
-            }
-
-            if (!vttUrl) {
-                output.value = '這部影片目前沒有字幕檔可以抓。';
-                return;
-            }
-
-            const vttResponse = await fetch(vttUrl);
-            const vttText = await vttResponse.text();
-
-            // 在這裡把原始檔案丟進我們寫好的清洗機
-            const finalCleanText = cleanVttText(vttText);
-
-            output.value = finalCleanText;
-            downloadBtn.style.display = 'block';
-
-        } catch (err) {
-            output.value = '發生錯誤了：\n' + err.message;
-        }
-    }
-
-    function downloadSubtitles() {
-        const text = document.getElementById('output').value;
-        if (!text) return;
-        
-        // 改成下載純文字檔 (.txt)
-        const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        
-        a.href = url;
-        a.download = 'JW_字幕純文字版.txt';
-        document.body.appendChild(a);
-        a.click();
-        
-        setTimeout(() => {
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        }, 100);
-    }
-</script>
-
-</body>
-</html>
+    <button class="btn-copy" id="copyBtn" onclick="copyText()">2. 複製全部文字</button>
+    <button class="btn-download" id="downloadBtn" onclick
