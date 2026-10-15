@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JW 字幕提取工具 (手機友善版)</title>
+    <title>JW 字幕提取工具 (純文字版)</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -49,7 +49,7 @@
         .btn-download {
             background-color: #2ECC71;
             color: white;
-            display: none; /* 預設隱藏，抓到字幕才顯示 */
+            display: none;
         }
         textarea {
             width: 100%;
@@ -58,8 +58,8 @@
             border: 1px solid #ccc;
             border-radius: 5px;
             box-sizing: border-box;
-            font-size: 14px;
-            line-height: 1.5;
+            font-size: 15px;
+            line-height: 1.6;
             resize: vertical;
         }
         .note {
@@ -72,19 +72,42 @@
 <body>
 
 <div class="container">
-    <h2>JW 字幕提取工具</h2>
+    <h2>JW 字幕提取工具 (純文字版)</h2>
     <p>請貼上 JW Library 的「分享連結」：</p>
     <input type="text" id="urlInput" placeholder="例如：https://www.jw.org/finder?srcid=share&wtlocale=CH...">
     
-    <button class="btn-fetch" onclick="fetchSubtitles()">1. 獲取字幕</button>
-    <button class="btn-download" id="downloadBtn" onclick="downloadSubtitles()">2. 下載字幕檔 (.vtt)</button>
+    <button class="btn-fetch" onclick="fetchSubtitles()">1. 獲取純文字</button>
+    <button class="btn-download" id="downloadBtn" onclick="downloadSubtitles()">2. 下載純文字檔 (.txt)</button>
     
-    <textarea id="output" placeholder="字幕內容會顯示在這裡...可以手動全選複製，或是點擊上方按鈕下載。"></textarea>
+    <textarea id="output" placeholder="乾淨的文字會顯示在這裡..."></textarea>
     
-    <p class="note">* 採用同步下載機制，避開手機瀏覽器的安全阻擋。</p>
 </div>
 
 <script>
+    // 清理 VTT 格式，只保留純文字的魔法函數
+    function cleanVttText(vtt) {
+        const lines = vtt.split('\n');
+        const cleanLines = [];
+        
+        for (let line of lines) {
+            line = line.trim();
+            
+            // 過濾掉不需要的行數：空白行、WEBVTT標頭、時間軸(-->)、純數字編號
+            if (!line) continue;
+            if (line === 'WEBVTT') continue;
+            if (line.includes('-->')) continue;
+            if (/^\d+$/.test(line)) continue;
+            if (line.startsWith('NOTE') || line.startsWith('Language:')) continue;
+            
+            // 把字幕內可能夾帶的樣式標籤 (例如 <b>, <i>, <c.color>) 拿掉
+            const textOnly = line.replace(/<[^>]+>/g, '');
+            cleanLines.push(textOnly);
+        }
+        
+        // 把所有的句子接起來，中間換行，讓它變成好讀的文章
+        return cleanLines.join('\n');
+    }
+
     async function fetchSubtitles() {
         const urlInput = document.getElementById('urlInput').value.trim();
         const output = document.getElementById('output');
@@ -95,31 +118,26 @@
             return;
         }
 
-        output.value = '正在努力去 JW 伺服器撈資料中...\n請稍候...';
+        output.value = '正在處理中，請稍候...';
         downloadBtn.style.display = 'none';
 
         try {
-            // 1. 解析網址找出語言(wtlocale)跟影片ID(lank)
             const urlObj = new URL(urlInput);
             const lank = urlObj.searchParams.get('lank') || urlObj.searchParams.get('docid');
-            const wtlocale = urlObj.searchParams.get('wtlocale') || 'CH'; // 預設抓中文
+            const wtlocale = urlObj.searchParams.get('wtlocale') || 'CH';
 
             if (!lank) {
-                output.value = '網址格式好像不太對。請確定是從 JW 網站或 APP 按「分享」產生的標準連結（裡面要有 lank 或 docid）。';
+                output.value = '網址格式有誤。';
                 return;
             }
 
-            // 2. 呼叫 JW Mediator API
             const apiUrl = `https://b.jw-cdn.org/apis/mediator/v1/media-items/${wtlocale}/${lank}`;
             const response = await fetch(apiUrl);
             
-            if (!response.ok) {
-                throw new Error('找不到這支影片的資料，可能是網址過期或語言代碼不對。');
-            }
+            if (!response.ok) throw new Error('找不到影片資料。');
             
             const data = await response.json();
 
-            // 3. 在一堆檔案裡尋找字幕檔 (VTT)
             let vttUrl = '';
             const mediaItems = data.media || [];
             
@@ -130,24 +148,25 @@
                         break;
                     }
                 }
-                if (vttUrl) break; // 找到就跳出迴圈
+                if (vttUrl) break;
             }
 
             if (!vttUrl) {
-                output.value = '解析成功，但這部影片似乎沒有提供外掛字幕檔。';
+                output.value = '這部影片目前沒有字幕檔可以抓。';
                 return;
             }
 
-            // 4. 去把 VTT 字幕檔的純文字抓回來
             const vttResponse = await fetch(vttUrl);
             const vttText = await vttResponse.text();
 
-            // 5. 顯示在畫面上，並把下載按鈕叫出來
-            output.value = vttText;
+            // 在這裡把原始檔案丟進我們寫好的清洗機
+            const finalCleanText = cleanVttText(vttText);
+
+            output.value = finalCleanText;
             downloadBtn.style.display = 'block';
 
         } catch (err) {
-            output.value = '發生錯誤了：\n' + err.message + '\n\n如果是跨網域(CORS)被擋，請換個瀏覽器試試看。';
+            output.value = '發生錯誤了：\n' + err.message;
         }
     }
 
@@ -155,17 +174,16 @@
         const text = document.getElementById('output').value;
         if (!text) return;
         
-        // 利用 Blob 產生虛擬檔案，這是手機瀏覽器比較看得懂的下載方式
-        const blob = new Blob([text], { type: 'text/vtt' });
+        // 改成下載純文字檔 (.txt)
+        const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         
         a.href = url;
-        a.download = 'JW_Subtitle.vtt';
+        a.download = 'JW_字幕純文字版.txt';
         document.body.appendChild(a);
         a.click();
         
-        // 點擊完過河拆橋把虛擬連結刪掉，釋放記憶體
         setTimeout(() => {
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
